@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bitbrowser"
 version = "0.1.0"
-description = "Async/sync Python SDK for the BitBrowser local browser-profile API."
+description = "Typed async/sync Python SDK for the BitBrowser local browser-profile API — Pydantic v2 models, httpx transport with tenacity retries, and full coverage of the browsers, groups, and tags resources."
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 license = { text = "MIT" }
@@ -51,6 +51,9 @@ dev = [
 Homepage = "https://github.com/yellow-dog-dog/bitbrowser"
 Repository = "https://github.com/yellow-dog-dog/bitbrowser"
 Issues = "https://github.com/yellow-dog-dog/bitbrowser/issues"
+Changelog = "https://github.com/yellow-dog-dog/bitbrowser/releases"
+Documentation = "https://github.com/yellow-dog-dog/bitbrowser#readme"
+"BitBrowser (upstream)" = "https://www.bitbrowser.net/"
 
 [tool.setuptools.packages.find]
 include = ["bitbrowser*"]

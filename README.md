@@ -104,6 +104,53 @@ See `demos/` for more examples.
 
 All async services have a sync counterpart with identical signatures.
 
+## Architecture
+
+The SDK is organised as a thin transport layer plus three resource services.
+Both client variants share the same service classes — only the HTTP backend
+differs (`httpx.AsyncClient` vs `httpx.Client`).
+
+```
+bitbrowser/
+├── _client.py     # AsyncBitBrowserClient + BitBrowserClient (HTTP transport)
+├── browsers.py    # AsyncBrowsersService / SyncBrowsersService
+├── groups.py      # AsyncGroupsService  / SyncGroupsService
+├── tags.py        # AsyncTagsService    / SyncTagsService
+├── models.py      # Pydantic v2 models (snake_case ↔ camelCase aliases)
+├── exceptions.py  # BitBrowserError, ApiError, TransportError
+└── py.typed       # PEP 561 marker
+```
+
+## Modules
+
+| Module | Responsibility |
+|--------|----------------|
+| `_client.py` | Manages the shared `httpx` connection pool, applies tenacity retries to transient transport failures, and raises `ApiError` when the BitBrowser server returns `success: false`. Exposes `health_check()` for connectivity probes. |
+| `browsers.py` | CRUD + lifecycle for browser windows: `create`, `update`, `open` (returns `OpenResult` with `ws` / `http` / `pid`), `close`, `delete`, `list`, `detail`, `pids`. |
+| `groups.py` | Manage browser-profile groups: `add`, `edit`, `delete`, `list`, `detail`. |
+| `tags.py` | Manage tags attached to browser profiles: `add`, `edit`, `delete`, `list`, `detail`. |
+| `models.py` | `Browser`, `BrowserFingerPrint`, `Group`, `Tag`, `OpenResult`, `ListBrowsersResponse`, `ListGroupsResponse`. All use `alias_generator=to_camel` so Python `snake_case` round-trips with the API's `camelCase` JSON. |
+| `exceptions.py` | `BitBrowserError` (base) → `ApiError` (server returned failure) and `TransportError` (HTTP / network failure, retried). |
+
+## Error handling
+
+```python
+from bitbrowser import ApiError, TransportError
+
+try:
+    await client.browsers.open("missing-id")
+except ApiError as exc:
+    # Business-logic failure — server returned {"success": false, "msg": ...}
+    print(exc)
+except TransportError as exc:
+    # HTTP / network failure after retries were exhausted
+    print(exc)
+```
+
+Transport failures are automatically retried up to **3 times** with
+exponential back-off (1s → 8s) via `tenacity`. `ApiError` is **not** retried
+because it represents a deterministic server response.
+
 ## Configuration
 
 ```python
