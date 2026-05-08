@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bitbrowser"
+version = "0.1.0"
+description = "Async/sync Python SDK for the BitBrowser local browser-profile API."
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = { text = "MIT" }
+authors = [
+    { name = "Huang Qi", email = "yellowdog016@gmail.com" },
+]
+keywords = [
+    "bitbrowser",
+    "browser-automation",
+    "browser-fingerprint",
+    "anti-detect",
+    "playwright",
+    "sdk",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP :: Browsers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Framework :: AsyncIO",
+    "Typing :: Typed",
+]
+dependencies = [
+    "httpx>=0.28.1",
+    "loguru>=0.7.3",
+    "pydantic>=2.13.3",
+    "tenacity>=9.1.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/yellow-dog-dog/bitbrowser"
+Repository = "https://github.com/yellow-dog-dog/bitbrowser"
+Issues = "https://github.com/yellow-dog-dog/bitbrowser/issues"
+
+[tool.setuptools.packages.find]
+include = ["bitbrowser*"]
+exclude = ["tests*", "demos*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
