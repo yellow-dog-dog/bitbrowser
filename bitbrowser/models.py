@@ -160,6 +160,13 @@ class BrowserFingerPrint(BaseModel):
     # ---- Launch ----
     launch_args: str | None = None
 
+    @field_validator("ostype")
+    @classmethod
+    def _validate_ostype(cls, value: str | None) -> str | None:
+        if value is not None and value not in {"PC", "Android", "IOS"}:
+            raise ValueError("ostype must be one of 'PC', 'Android', or 'IOS'")
+        return value
+
 
 # ---------------------------------------------------------------------------
 # Primary resource
