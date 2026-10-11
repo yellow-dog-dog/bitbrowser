@@ -91,6 +91,14 @@ class TestBrowserFingerPrintModelValidate:
         assert fp.ostype == "PC"
         assert fp.os == "Win32"
 
+    @pytest.mark.parametrize("ostype", ["PC", "Android", "IOS"])
+    def test_documented_ostype_values_are_accepted(self, ostype):
+        assert BrowserFingerPrint(ostype=ostype).ostype == ostype
+
+    def test_unsupported_ostype_is_rejected(self):
+        with pytest.raises(ValidationError, match="ostype must be one of"):
+            BrowserFingerPrint(ostype="INVALID_TEST")
+
     def test_unknown_keys_go_to_extra(self):
         fp = BrowserFingerPrint.model_validate({"unknownField": "val"})
         assert fp.model_extra == {"unknownField": "val"}
