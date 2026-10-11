@@ -1,5 +1,7 @@
 # bitbrowser
 
+[English](README.md) | [中文入门与连接排错](README.zh-CN.md)
+
 Async/sync Python SDK for the [BitBrowser](https://www.bitbrowser.net/) local
 browser-profile API.
 
@@ -21,7 +23,7 @@ Or with [uv](https://docs.astral.sh/uv/):
 uv add git+https://github.com/yellow-dog-dog/bitbrowser
 ```
 
-Requires Python 3.12+ and a running BitBrowser client on the local machine
+Requires Python 3.12 or 3.13 and a running BitBrowser client on the local machine
 (default API at `http://127.0.0.1:54345`).
 
 ## Quick start (async)
@@ -98,11 +100,11 @@ See `demos/` for more examples.
 
 | Service | Methods |
 |---------|---------|
-| `client.browsers` | `create`, `update`, `open`, `close`, `delete`, `list`, `detail`, `pids` |
+| `client.browsers` | `create`, `update`, `open`, `close`, `delete`, `list`, `get`, `get_pids`, `get_all_pids`, `get_alive_pids` |
 | `client.groups` | `add`, `edit`, `delete`, `list`, `detail` |
-| `client.tags` | `add`, `edit`, `delete`, `list`, `detail` |
+| `client.tags` | `create`, `update`, `delete`, `list`, `update_relation` |
 
-All async services have a sync counterpart with identical signatures.
+All async services have a corresponding sync service.
 
 ## Configuration
 
@@ -120,11 +122,13 @@ AsyncBitBrowserClient(
 git clone https://github.com/yellow-dog-dog/bitbrowser
 cd bitbrowser
 uv sync --extra dev
-uv run pytest
+uv run pytest -m "not integration"
 ```
 
 Integration tests in `tests/test_integration.py` require a running BitBrowser
-instance and are skipped by default.
+instance and create, modify, and permanently delete test profiles. They are marked
+`integration`, but are not skipped automatically by plain `pytest`. Run them
+explicitly with `uv run pytest -m integration -v` only in a prepared test environment.
 
 ## License
 
