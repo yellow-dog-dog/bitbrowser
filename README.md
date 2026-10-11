@@ -1,5 +1,7 @@
 # bitbrowser
 
+[English](README.md) | [中文入门与连接排错](README.zh-CN.md)
+
 Async/sync Python SDK for the [BitBrowser](https://www.bitbrowser.net/) local
 browser-profile API.
 
