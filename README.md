@@ -123,8 +123,12 @@ uv sync --extra dev
 uv run pytest
 ```
 
-Integration tests in `tests/test_integration.py` require a running BitBrowser
-instance and are skipped by default.
+`uv run pytest` runs the unit suite and excludes integration tests by default.
+The integration tests in `tests/test_integration.py` create and delete browser
+profiles through a separate BitBrowser API. They are skipped unless
+`BITBROWSER_TEST_BASE_URL` is set. Point it to an isolated test configuration,
+then run `uv run pytest -m integration`; interrupted runs may leave test
+profiles behind.
 
 ## License
 

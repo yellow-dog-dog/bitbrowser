@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Self
 
 import httpx
 from loguru import logger
@@ -17,6 +17,36 @@ from .exceptions import ApiError, TransportError
 
 _DEFAULT_BASE_URL = "http://127.0.0.1:54345"
 _DEFAULT_TIMEOUT = 30.0
+_SENSITIVE_KEY_PARTS = (
+    "password",
+    "secret",
+    "cookie",
+    "token",
+    "authorization",
+    "username",
+    "credential",
+    "apikey",
+    "accesskey",
+    "privatekey",
+    "dynamicipurl",
+    "refreshproxyurl",
+)
+
+
+def _redact_for_log(value: Any) -> Any:
+    """Return a copy of a JSON body with credential-like fields redacted."""
+    if isinstance(value, dict):
+        redacted = {}
+        for key, item in value.items():
+            normalized_key = "".join(char for char in str(key).casefold() if char.isalnum())
+            if any(part in normalized_key for part in _SENSITIVE_KEY_PARTS):
+                redacted[key] = "[REDACTED]"
+            else:
+                redacted[key] = _redact_for_log(item)
+        return redacted
+    if isinstance(value, list):
+        return [_redact_for_log(item) for item in value]
+    return value
 
 
 def _check_response(payload: dict[str, Any]) -> dict[str, Any]:
@@ -68,20 +98,21 @@ class AsyncBitBrowserClient:
     # Context-manager protocol
     # ------------------------------------------------------------------
 
-    async def __aenter__(self) -> AsyncBitBrowserClient:
+    async def __aenter__(self) -> Self:
         await self.open()
         return self
 
-    async def __aexit__(self, *_: Any) -> None:
+    async def __aexit__(self, *_: object) -> None:
         await self.close()
 
     async def open(self) -> None:
         """Open the underlying HTTP connection pool."""
-        self._http = httpx.AsyncClient(
-            base_url=self._base_url,
-            timeout=self._timeout,
-            **self._httpx_kwargs,
-        )
+        if self._http is None:
+            self._http = httpx.AsyncClient(
+                base_url=self._base_url,
+                timeout=self._timeout,
+                **self._httpx_kwargs,
+            )
 
     async def close(self) -> None:
         """Close the underlying HTTP connection pool."""
@@ -119,7 +150,7 @@ class AsyncBitBrowserClient:
                 "Client is not open. Use 'async with AsyncBitBrowserClient() as client:'"
                 " or call 'await client.open()' first."
             )
-        logger.debug("→ POST {} body={}", path, body)
+        logger.debug("→ POST {} body={}", path, _redact_for_log(body))
         try:
             response = await self._http.post(path, json=body or {})
             response.raise_for_status()
@@ -186,20 +217,21 @@ class BitBrowserClient:
     # Context-manager protocol
     # ------------------------------------------------------------------
 
-    def __enter__(self) -> BitBrowserClient:
+    def __enter__(self) -> Self:
         self.open()
         return self
 
-    def __exit__(self, *_: Any) -> None:
+    def __exit__(self, *_: object) -> None:
         self.close()
 
     def open(self) -> None:
         """Open the underlying HTTP connection pool."""
-        self._http = httpx.Client(
-            base_url=self._base_url,
-            timeout=self._timeout,
-            **self._httpx_kwargs,
-        )
+        if self._http is None:
+            self._http = httpx.Client(
+                base_url=self._base_url,
+                timeout=self._timeout,
+                **self._httpx_kwargs,
+            )
 
     def close(self) -> None:
         """Close the underlying HTTP connection pool."""
@@ -237,7 +269,7 @@ class BitBrowserClient:
                 "Client is not open. Use 'with BitBrowserClient() as client:'"
                 " or call 'client.open()' first."
             )
-        logger.debug("→ POST {} body={}", path, body)
+        logger.debug("→ POST {} body={}", path, _redact_for_log(body))
         try:
             response = self._http.post(path, json=body or {})
             response.raise_for_status()
