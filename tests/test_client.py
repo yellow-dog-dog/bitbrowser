@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
@@ -11,9 +11,9 @@ from bitbrowser._client import (
     AsyncBitBrowserClient,
     BitBrowserClient,
     _check_response,
+    _redact_for_log,
 )
 from bitbrowser.exceptions import ApiError, TransportError
-
 
 # ===========================================================================
 # _check_response helper
@@ -43,6 +43,30 @@ class TestCheckResponse:
         with pytest.raises(ApiError) as exc_info:
             _check_response({"success": False})
         assert exc_info.value.msg == "unknown error"
+
+
+class TestLogRedaction:
+    def test_redacts_credentials_recursively_without_mutating_input(self):
+        body = {
+            "name": "demo",
+            "userName": "account",
+            "proxy_password": "proxy-secret",
+            "browserFingerPrint": {"faSecretKey": "totp-secret", "languages": "en"},
+            "dynamicIpUrl": "https://vendor.example/refresh?token=secret",
+            "tags": [{"cookie": "session-cookie"}],
+        }
+
+        redacted = _redact_for_log(body)
+
+        assert redacted == {
+            "name": "demo",
+            "userName": "[REDACTED]",
+            "proxy_password": "[REDACTED]",
+            "browserFingerPrint": {"faSecretKey": "[REDACTED]", "languages": "en"},
+            "dynamicIpUrl": "[REDACTED]",
+            "tags": [{"cookie": "[REDACTED]"}],
+        }
+        assert body["proxy_password"] == "proxy-secret"
 
 
 # ===========================================================================
@@ -94,6 +118,15 @@ class TestAsyncBitBrowserClientContextManager:
         client = AsyncBitBrowserClient()
         await client.open()
         assert isinstance(client._http, httpx.AsyncClient)
+        await client.close()
+
+    @pytest.mark.asyncio
+    async def test_open_is_idempotent(self):
+        client = AsyncBitBrowserClient()
+        await client.open()
+        first = client._http
+        await client.open()
+        assert client._http is first
         await client.close()
 
     @pytest.mark.asyncio
@@ -218,6 +251,14 @@ class TestBitBrowserClientContextManager:
         client = BitBrowserClient()
         client.open()
         assert isinstance(client._http, httpx.Client)
+        client.close()
+
+    def test_open_is_idempotent(self):
+        client = BitBrowserClient()
+        client.open()
+        first = client._http
+        client.open()
+        assert client._http is first
         client.close()
 
     def test_close_idempotent(self):

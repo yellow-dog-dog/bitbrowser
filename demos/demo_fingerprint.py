@@ -20,7 +20,7 @@ async def main() -> None:
         # Step 1 — build a fingerprint with explicit values.
         # All fields are optional; omitted fields are randomised by
         # BitBrowser.  The camelCase ↔ snake_case mapping is handled
-        # automatically by BrowserFingerPrint.to_api_dict().
+        # by Pydantic's model_dump(by_alias=True) and model_validate().
         # ------------------------------------------------------------------
         fp = BrowserFingerPrint(
             core_version="130",

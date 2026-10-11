@@ -59,26 +59,22 @@ from .models import (
 from .tags import AsyncTagsService, SyncTagsService
 
 __all__ = [
-    # Clients
+    "ApiError",
     "AsyncBitBrowserClient",
-    "BitBrowserClient",
-    # Services
     "AsyncBrowsersService",
-    "SyncBrowsersService",
     "AsyncGroupsService",
-    "SyncGroupsService",
     "AsyncTagsService",
-    "SyncTagsService",
-    # Models
+    "BitBrowserClient",
+    "BitBrowserError",
     "Browser",
     "BrowserFingerPrint",
     "Group",
     "ListBrowsersResponse",
     "ListGroupsResponse",
     "OpenResult",
+    "SyncBrowsersService",
+    "SyncGroupsService",
+    "SyncTagsService",
     "Tag",
-    # Exceptions
-    "ApiError",
-    "BitBrowserError",
     "TransportError",
 ]

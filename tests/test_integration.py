@@ -1,11 +1,12 @@
-"""Integration tests — require a running BitBrowser instance on localhost:54345.
+"""Integration tests — require an isolated BitBrowser API endpoint.
 
 Run with:
-    uv run pytest -m integration -v
+    BITBROWSER_TEST_BASE_URL=<isolated-api-url> uv run pytest -m integration -v
 """
 
 from __future__ import annotations
 
+import os
 import time
 
 import pytest
@@ -13,11 +14,10 @@ import pytest
 from bitbrowser import BitBrowserClient, Browser, BrowserFingerPrint
 from bitbrowser.exceptions import ApiError
 
-
 pytestmark = pytest.mark.integration
 
 # API 需要代理方式字段，noproxy 表示不使用代理
-_NO_PROXY = dict(proxy_method=2, proxy_type="noproxy")
+_NO_PROXY = {"proxy_method": 2, "proxy_type": "noproxy"}
 
 # 基础指纹，避免 API 报「请选择代理方式」
 _BASE_FP = BrowserFingerPrint(core_version="130", ostype="PC", os="Win32")
@@ -29,7 +29,13 @@ def _new_browser(**kwargs) -> Browser:
 
 @pytest.fixture(scope="module")
 def client():
-    with BitBrowserClient() as c:
+    base_url = os.environ.get("BITBROWSER_TEST_BASE_URL")
+    if not base_url:
+        pytest.skip(
+            "Set BITBROWSER_TEST_BASE_URL to an isolated BitBrowser API "
+            "before running integration tests."
+        )
+    with BitBrowserClient(base_url=base_url) as c:
         yield c
 
 

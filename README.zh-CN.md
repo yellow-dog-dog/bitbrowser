@@ -188,7 +188,8 @@ with BitBrowserClient(
 - 关闭窗口后，按源码说明至少等待 5 秒再重新打开或删除，给进程退出留出时间。
 - 跨机器连接时，管理 API 和 CDP 两条连接都必须可达。不要直接把本地管理端口或
   CDP 调试端口暴露到公网；优先让 Python 与比特浏览器在同一主机运行。
-- SDK 的 DEBUG 日志可能包含请求体。分享排错日志前移除代理密码、Cookie 和其他私人数据。
+- DEBUG 日志包含请求体；密码、用户名、Cookie、密钥和代理刷新 URL 等已知敏感字段会遮蔽。
+  自定义字段可能仍包含私人信息，分享日志前请检查并移除。
 
 ## 本地开发与验证
 
@@ -196,13 +197,14 @@ with BitBrowserClient(
 git clone https://github.com/yellow-dog-dog/bitbrowser
 cd bitbrowser
 uv sync --extra dev
-uv run pytest -m "not integration"
+uv run pytest
 ```
 
-当前仓库的集成测试只是标记为 `integration`，**并没有默认跳过机制**。
-普通 `pytest` 也会收集并运行它们。仅在已准备好本地比特浏览器、测试账号和对应
-内核时运行 `uv run pytest -m integration -v`；这些测试会创建、打开、修改并永久
-删除测试配置。请先阅读 [tests/test_integration.py](tests/test_integration.py)。
+普通 `uv run pytest` 会默认排除集成测试。集成测试还要求设置
+`BITBROWSER_TEST_BASE_URL`，指向独立的测试版比特浏览器 API；未设置时会跳过。
+这些测试会创建、打开、修改并永久删除 profile，异常中断可能留下测试数据。
+只有确认目标是隔离的测试配置后，才运行 `uv run pytest -m integration -v`。
+请先阅读 [tests/test_integration.py](tests/test_integration.py)。
 
 更多示例见 [demos](demos/)，实现见 [_client.py](bitbrowser/_client.py)、
 [browsers.py](bitbrowser/browsers.py) 和 [models.py](bitbrowser/models.py)。

@@ -8,7 +8,6 @@ import pytest
 
 from bitbrowser import AsyncBitBrowserClient, BitBrowserClient
 
-
 # ---------------------------------------------------------------------------
 # Async client fixture — no real HTTP; request() is an AsyncMock
 # ---------------------------------------------------------------------------

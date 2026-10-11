@@ -7,9 +7,14 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from bitbrowser.browsers import AsyncBrowsersService, SyncBrowsersService
-from bitbrowser.models import Browser, BrowserFingerPrint, ListBrowsersResponse, OpenResult
-from .conftest import BROWSER_DATA, OPEN_RESULT_DATA
+from bitbrowser.models import (
+    Browser,
+    BrowserFingerPrint,
+    ListBrowsersResponse,
+    OpenResult,
+)
 
+from .conftest import BROWSER_DATA, OPEN_RESULT_DATA
 
 # ===========================================================================
 # Helpers

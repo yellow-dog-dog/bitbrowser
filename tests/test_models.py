@@ -2,31 +2,38 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import pytest
+from pydantic import ValidationError
 
-from bitbrowser.models import Browser, BrowserFingerPrint, ListBrowsersResponse, OpenResult
-
+from bitbrowser.models import (
+    Browser,
+    BrowserFingerPrint,
+    ListBrowsersResponse,
+    OpenResult,
+)
 
 # ===========================================================================
 # BrowserFingerPrint
 # ===========================================================================
 
 
-class TestBrowserFingerPrintToApiDict:
+class TestBrowserFingerPrintModelDump:
     def test_empty_instance_produces_empty_dict(self):
         fp = BrowserFingerPrint()
-        assert fp.to_api_dict() == {}
+        assert fp.model_dump(by_alias=True, exclude_none=True) == {}
 
     def test_set_fields_are_included(self):
         fp = BrowserFingerPrint(core_version="130", ostype="PC", os="Win32")
-        d = fp.to_api_dict()
+        d = fp.model_dump(by_alias=True, exclude_none=True)
         assert d["coreVersion"] == "130"
         assert d["ostype"] == "PC"
         assert d["os"] == "Win32"
 
     def test_none_fields_are_excluded(self):
         fp = BrowserFingerPrint(core_version="130")
-        d = fp.to_api_dict()
+        d = fp.model_dump(by_alias=True, exclude_none=True)
         assert "ostype" not in d
         assert "os" not in d
 
@@ -37,7 +44,7 @@ class TestBrowserFingerPrintToApiDict:
             open_height=1080,
             hardware_concurrency="8",
         )
-        d = fp.to_api_dict()
+        d = fp.model_dump(by_alias=True, exclude_none=True)
         assert d["isIpCreateTimeZone"] is True
         assert d["openWidth"] == 1920
         assert d["openHeight"] == 1080
@@ -45,40 +52,39 @@ class TestBrowserFingerPrintToApiDict:
 
     def test_webrtc_maps_to_webRTC(self):
         fp = BrowserFingerPrint(webrtc="3")
-        assert fp.to_api_dict()["webRTC"] == "3"
+        assert fp.model_dump(by_alias=True, exclude_none=True)["webRTC"] == "3"
 
     def test_webgl_maps_to_webGL(self):
         fp = BrowserFingerPrint(webgl="0")
-        assert fp.to_api_dict()["webGL"] == "0"
+        assert fp.model_dump(by_alias=True, exclude_none=True)["webGL"] == "0"
 
     def test_host_ip_maps_to_hostIP(self):
         fp = BrowserFingerPrint(host_ip="10.0.0.1")
-        assert fp.to_api_dict()["hostIP"] == "10.0.0.1"
+        assert fp.model_dump(by_alias=True, exclude_none=True)["hostIP"] == "10.0.0.1"
 
     def test_extra_is_merged(self):
-        fp = BrowserFingerPrint(extra={"customKey": "val"})
-        d = fp.to_api_dict()
+        fp = BrowserFingerPrint(customKey="val")
+        d = fp.model_dump(by_alias=True, exclude_none=True)
         assert d["customKey"] == "val"
 
     def test_extra_overrides_mapped_field(self):
-        fp = BrowserFingerPrint(core_version="130", extra={"coreVersion": "999"})
-        d = fp.to_api_dict()
-        assert d["coreVersion"] == "999"
+        fp = BrowserFingerPrint.model_validate({"coreVersion": "999"})
+        assert fp.core_version == "999"
 
     def test_bool_false_is_included(self):
         fp = BrowserFingerPrint(is_ip_create_language=False)
-        d = fp.to_api_dict()
+        d = fp.model_dump(by_alias=True, exclude_none=True)
         assert d["isIpCreateLanguage"] is False
 
     def test_zero_int_is_included(self):
         fp = BrowserFingerPrint(open_width=0)
-        d = fp.to_api_dict()
+        d = fp.model_dump(by_alias=True, exclude_none=True)
         assert d["openWidth"] == 0
 
 
-class TestBrowserFingerPrintFromApiDict:
+class TestBrowserFingerPrintModelValidate:
     def test_known_keys_are_mapped(self):
-        fp = BrowserFingerPrint.from_api_dict(
+        fp = BrowserFingerPrint.model_validate(
             {"coreVersion": "130", "ostype": "PC", "os": "Win32"}
         )
         assert fp.core_version == "130"
@@ -86,26 +92,26 @@ class TestBrowserFingerPrintFromApiDict:
         assert fp.os == "Win32"
 
     def test_unknown_keys_go_to_extra(self):
-        fp = BrowserFingerPrint.from_api_dict({"unknownField": "val"})
-        assert fp.extra == {"unknownField": "val"}
+        fp = BrowserFingerPrint.model_validate({"unknownField": "val"})
+        assert fp.model_extra == {"unknownField": "val"}
         assert fp.core_version is None
 
     def test_webRTC_maps_to_webrtc(self):
-        fp = BrowserFingerPrint.from_api_dict({"webRTC": "1"})
+        fp = BrowserFingerPrint.model_validate({"webRTC": "1"})
         assert fp.webrtc == "1"
 
     def test_webGL_maps_to_webgl(self):
-        fp = BrowserFingerPrint.from_api_dict({"webGL": "0"})
+        fp = BrowserFingerPrint.model_validate({"webGL": "0"})
         assert fp.webgl == "0"
 
     def test_hostIP_maps_to_host_ip(self):
-        fp = BrowserFingerPrint.from_api_dict({"hostIP": "192.168.1.1"})
+        fp = BrowserFingerPrint.model_validate({"hostIP": "192.168.1.1"})
         assert fp.host_ip == "192.168.1.1"
 
     def test_empty_dict_gives_all_none(self):
-        fp = BrowserFingerPrint.from_api_dict({})
+        fp = BrowserFingerPrint.model_validate({})
         assert fp.core_version is None
-        assert fp.extra == {}
+        assert fp.model_extra == {}
 
     def test_roundtrip(self):
         original = BrowserFingerPrint(
@@ -115,7 +121,9 @@ class TestBrowserFingerPrintFromApiDict:
             open_width=1280,
             webrtc="3",
         )
-        fp2 = BrowserFingerPrint.from_api_dict(original.to_api_dict())
+        fp2 = BrowserFingerPrint.model_validate(
+            original.model_dump(by_alias=True, exclude_none=True)
+        )
         assert fp2.core_version == "130"
         assert fp2.ostype == "PC"
         assert fp2.os == "Win32"
@@ -128,24 +136,24 @@ class TestBrowserFingerPrintFromApiDict:
 # ===========================================================================
 
 
-class TestBrowserToApiDict:
+class TestBrowserModelDump:
     def test_empty_browser_produces_empty_dict(self):
         b = Browser()
-        assert b.to_api_dict() == {}
+        assert b.model_dump(by_alias=True, exclude_none=True) == {}
 
     def test_id_is_included(self):
         b = Browser(id="br-1")
-        assert b.to_api_dict()["id"] == "br-1"
+        assert b.model_dump(by_alias=True, exclude_none=True)["id"] == "br-1"
 
     def test_none_fields_are_excluded(self):
         b = Browser(name="test")
-        d = b.to_api_dict()
+        d = b.model_dump(by_alias=True, exclude_none=True)
         assert "id" not in d
         assert "groupId" not in d
 
     def test_camel_case_mapping(self):
         b = Browser(group_id="g1", proxy_type="socks5", proxy_user_name="u")
-        d = b.to_api_dict()
+        d = b.model_dump(by_alias=True, exclude_none=True)
         assert d["groupId"] == "g1"
         assert d["proxyType"] == "socks5"
         assert d["proxyUserName"] == "u"
@@ -153,33 +161,33 @@ class TestBrowserToApiDict:
     def test_browser_finger_print_nested(self):
         fp = BrowserFingerPrint(core_version="130")
         b = Browser(browser_finger_print=fp)
-        d = b.to_api_dict()
+        d = b.model_dump(by_alias=True, exclude_none=True)
         assert "browserFingerPrint" in d
         assert d["browserFingerPrint"]["coreVersion"] == "130"
 
     def test_browser_finger_print_absent_when_none(self):
         b = Browser(name="x")
-        assert "browserFingerPrint" not in b.to_api_dict()
+        assert "browserFingerPrint" not in b.model_dump(by_alias=True, exclude_none=True)
 
     def test_extra_is_merged(self):
-        b = Browser(extra={"customField": 99})
-        assert b.to_api_dict()["customField"] == 99
+        b = Browser(customField=99)
+        assert b.model_dump(by_alias=True, exclude_none=True)["customField"] == 99
 
     def test_bool_fields(self):
         b = Browser(abort_image=True, mute_audio=False)
-        d = b.to_api_dict()
+        d = b.model_dump(by_alias=True, exclude_none=True)
         assert d["abortImage"] is True
         assert d["muteAudio"] is False
 
     def test_port_zero_is_excluded(self):
         # port=0 is falsy-ish but not None; it should be included
         b = Browser(port=0)
-        assert b.to_api_dict()["port"] == 0
+        assert b.model_dump(by_alias=True, exclude_none=True)["port"] == 0
 
 
-class TestBrowserFromApiDict:
+class TestBrowserModelValidate:
     def test_known_fields_mapped(self):
-        b = Browser.from_api_dict(
+        b = Browser.model_validate(
             {"id": "br-1", "name": "test", "groupId": "g1", "seq": 5}
         )
         assert b.id == "br-1"
@@ -188,23 +196,22 @@ class TestBrowserFromApiDict:
         assert b.seq == 5
 
     def test_unknown_fields_go_to_extra(self):
-        b = Browser.from_api_dict({"unknownKey": "val"})
-        assert b.extra == {"unknownKey": "val"}
+        b = Browser.model_validate({"unknownKey": "val"})
+        assert b.model_extra == {"unknownKey": "val"}
 
     def test_nested_browser_finger_print(self):
-        b = Browser.from_api_dict(
+        b = Browser.model_validate(
             {"browserFingerPrint": {"coreVersion": "130", "os": "Win32"}}
         )
         assert isinstance(b.browser_finger_print, BrowserFingerPrint)
         assert b.browser_finger_print.core_version == "130"
 
-    def test_nested_browser_finger_print_not_dict_goes_to_extra(self):
-        b = Browser.from_api_dict({"browserFingerPrint": "string-value"})
-        assert b.extra["browserFingerPrint"] == "string-value"
-        assert b.browser_finger_print is None
+    def test_nested_browser_finger_print_must_be_an_object(self):
+        with pytest.raises(ValidationError):
+            Browser.model_validate({"browserFingerPrint": "string-value"})
 
     def test_proxy_fields(self):
-        b = Browser.from_api_dict(
+        b = Browser.model_validate(
             {
                 "proxyType": "http",
                 "host": "1.2.3.4",
@@ -228,7 +235,9 @@ class TestBrowserFromApiDict:
             port=1080,
             browser_finger_print=BrowserFingerPrint(core_version="130"),
         )
-        b2 = Browser.from_api_dict(original.to_api_dict())
+        b2 = Browser.model_validate(
+            original.model_dump(by_alias=True, exclude_none=True)
+        )
         assert b2.id == "br-99"
         assert b2.name == "window"
         assert b2.proxy_type == "socks5"
@@ -236,9 +245,9 @@ class TestBrowserFromApiDict:
         assert b2.browser_finger_print.core_version == "130"
 
     def test_empty_dict(self):
-        b = Browser.from_api_dict({})
+        b = Browser.model_validate({})
         assert b.id is None
-        assert b.extra == {}
+        assert b.model_extra == {}
 
 
 # ===========================================================================
@@ -247,7 +256,7 @@ class TestBrowserFromApiDict:
 
 
 class TestOpenResult:
-    FULL_DATA = {
+    FULL_DATA: ClassVar[dict[str, object]] = {
         "ws": "ws://127.0.0.1:9222/devtools/browser/abc",
         "http": "127.0.0.1:9222",
         "coreVersion": "130",
@@ -260,14 +269,14 @@ class TestOpenResult:
     }
 
     def test_required_fields(self):
-        r = OpenResult.from_api_dict(self.FULL_DATA)
+        r = OpenResult.model_validate(self.FULL_DATA)
         assert r.ws == self.FULL_DATA["ws"]
         assert r.http == self.FULL_DATA["http"]
         assert r.core_version == "130"
         assert r.driver == "/usr/local/bin/chromedriver"
 
     def test_optional_fields(self):
-        r = OpenResult.from_api_dict(self.FULL_DATA)
+        r = OpenResult.model_validate(self.FULL_DATA)
         assert r.seq == 1
         assert r.name == "my-window"
         assert r.remark == "note"
@@ -281,7 +290,7 @@ class TestOpenResult:
             "coreVersion": "130",
             "driver": "/path/chromedriver",
         }
-        r = OpenResult.from_api_dict(minimal)
+        r = OpenResult.model_validate(minimal)
         assert r.seq is None
         assert r.name is None
         assert r.remark is None
@@ -289,8 +298,8 @@ class TestOpenResult:
         assert r.pid is None
 
     def test_missing_required_key_raises(self):
-        with pytest.raises(KeyError):
-            OpenResult.from_api_dict({"http": "x", "coreVersion": "1", "driver": "d"})
+        with pytest.raises(ValidationError):
+            OpenResult.model_validate({"http": "x", "coreVersion": "1", "driver": "d"})
 
 
 # ===========================================================================

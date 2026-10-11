@@ -23,7 +23,7 @@ Or with [uv](https://docs.astral.sh/uv/):
 uv add git+https://github.com/yellow-dog-dog/bitbrowser
 ```
 
-Requires Python 3.12 or 3.13 and a running BitBrowser client on the local machine
+Requires Python 3.12+ and a running BitBrowser client on the local machine
 (default API at `http://127.0.0.1:54345`).
 
 ## Quick start (async)
@@ -100,11 +100,11 @@ See `demos/` for more examples.
 
 | Service | Methods |
 |---------|---------|
-| `client.browsers` | `create`, `update`, `open`, `close`, `delete`, `list`, `get`, `get_pids`, `get_all_pids`, `get_alive_pids` |
+| `client.browsers` | `create`, `update`, `open`, `close`, `delete`, `list`, `detail`, `pids` |
 | `client.groups` | `add`, `edit`, `delete`, `list`, `detail` |
-| `client.tags` | `create`, `update`, `delete`, `list`, `update_relation` |
+| `client.tags` | `add`, `edit`, `delete`, `list`, `detail` |
 
-All async services have a corresponding sync service.
+All async services have a sync counterpart with identical signatures.
 
 ## Configuration
 
@@ -122,13 +122,15 @@ AsyncBitBrowserClient(
 git clone https://github.com/yellow-dog-dog/bitbrowser
 cd bitbrowser
 uv sync --extra dev
-uv run pytest -m "not integration"
+uv run pytest
 ```
 
-Integration tests in `tests/test_integration.py` require a running BitBrowser
-instance and create, modify, and permanently delete test profiles. They are marked
-`integration`, but are not skipped automatically by plain `pytest`. Run them
-explicitly with `uv run pytest -m integration -v` only in a prepared test environment.
+`uv run pytest` runs the unit suite and excludes integration tests by default.
+The integration tests in `tests/test_integration.py` create and delete browser
+profiles through a separate BitBrowser API. They are skipped unless
+`BITBROWSER_TEST_BASE_URL` is set. Point it to an isolated test configuration,
+then run `uv run pytest -m integration`; interrupted runs may leave test
+profiles behind.
 
 ## License
 
